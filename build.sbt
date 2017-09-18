@@ -1,12 +1,10 @@
 
 val libdeps = Seq(
-//  "org.apache.spark" % "spark-core_2.11" % "2.2.0",
-  "org.apache.spark" % "spark-sql_2.11" % "2.2.0",
-  "org.apache.spark" % "spark-streaming_2.11" % "2.2.0",
-  "org.apache.spark" % "spark-streaming-kafka-0-10_2.11" % "2.2.0",
-  "com.datastax.spark" % "spark-cassandra-connector_2.11" % "2.0.5",
   "com.typesafe" % "config" % "1.3.1",
-  "com.typesafe.play" %% "play-json" % "2.6.3"
+  "com.typesafe.play" %% "play-json" % "2.6.3",
+  "com.typesafe.akka" % "akka-actor_2.12" % "2.5.4",
+  "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "0.11",
+  "com.typesafe.akka" %% "akka-stream-kafka" % "0.17"
 )
 
 
@@ -18,7 +16,7 @@ lazy val root = (project in file("."))
       name := "tradr-logger",
       organization := "tradr",
       version := "1.0.0",
-      scalaVersion := "2.11.11",
+      scalaVersion := "2.12.2",
       libraryDependencies ++= libdeps,
       assemblyJarName in assembly := "tradr-logger.jar"
     )
