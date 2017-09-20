@@ -1,8 +1,8 @@
 
 val libdeps = Seq(
   "com.typesafe" % "config" % "1.3.1",
-  "com.typesafe.play" %% "play-json" % "2.6.3",
-  "com.typesafe.akka" % "akka-actor_2.12" % "2.5.4",
+//  "com.typesafe.play" %% "play-json" % "2.6.3",
+  "com.typesafe.akka" %% "akka-actor" % "2.5.4",
   "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "0.11",
   "com.typesafe.akka" %% "akka-stream-kafka" % "0.17"
 )
@@ -25,13 +25,16 @@ lazy val root = (project in file("."))
 
 val productionConfFileSource = new File("/home/leifblaese/Dropbox/Privat/Tradr/production.conf")
 dockerfile in docker := {
-  val appDir: File = stage.value
-  val targetDir = "/opt/tradr-logger"
+  val artifact: File = assembly.value
+  println(artifact.toString)
+  val targetDir = "/opt/tradr-logger/"
   new Dockerfile {
     from("java")
-    copy(appDir, targetDir)
+    copy(artifact, targetDir)
     copy(productionConfFileSource, targetDir)
-    entryPoint(s"$targetDir/bin/${executableScriptName.value}", s"-Dconfig.file=$targetDir/production.conf")
+    entryPoint("java", "-jar", s"${targetDir}tradr-logger.jar", s"-Dconfig.file=${targetDir}production.conf")
+//    copy(productionConfFileSource, targetDir)
+//    entryPoint(s"$targetDir/bin/${executableScriptName.value}", s"-Dconfig.file=$targetDir/production.conf")
   }
 }
 

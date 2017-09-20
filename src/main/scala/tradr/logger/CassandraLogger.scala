@@ -4,16 +4,15 @@ import akka.Done
 import akka.actor.ActorSystem
 import akka.kafka.{ConsumerSettings, Subscriptions}
 import akka.kafka.scaladsl.Consumer
-import akka.stream.{ActorMaterializer, KillSwitches, UniqueKillSwitch}
+import akka.stream.ActorMaterializer
 import akka.stream.alpakka.cassandra.scaladsl.CassandraSink
-import akka.stream.scaladsl.{Keep, RunnableGraph, Sink}
+import akka.stream.scaladsl.{Keep, Sink}
 import com.datastax.driver.core.{Cluster, PreparedStatement, Session}
-import com.google.common.util.concurrent.ListenableFuture
-import com.typesafe.config.{Config, ConfigFactory}
+import com.typesafe.config.Config
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
 import play.api.libs.json.Json
-import tradr.common.CurrencyPoint
+import tradr.common.PricingPoint
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
@@ -46,7 +45,7 @@ object CassandraLogger {
       .connect()
   }
 
-  private def getCassandraSink(conf: Config)(implicit ec: ExecutionContext): Sink[CurrencyPoint, Future[Done]] = {
+  private def getCassandraSink(conf: Config)(implicit ec: ExecutionContext): Sink[PricingPoint, Future[Done]] = {
     implicit val session = getCassandraSession(conf)
 
     val keyspaceName = conf.getString("cassandra.currencyKeyspace")
@@ -54,14 +53,14 @@ object CassandraLogger {
 
 
 
-    val preparedStatement = session.prepare(s"INSERT INTO $keyspaceName.$tableName VALUES (?, ?)")
+    val preparedStatement = session.prepare(s"INSERT INTO $keyspaceName.$tableName VALUES (?, ?, ?)")
     val statementBinder =
-      (point: CurrencyPoint, statement: PreparedStatement) =>
+      (point: PricingPoint, statement: PreparedStatement) =>
         statement.bind(
-          point.timestamp, point.currencyPair, point.value
+          point.timestamp.asInstanceOf[Object], point.currencyPair.asInstanceOf[Object], point.value.asInstanceOf[Object]
         )
 
-    CassandraSink.apply[CurrencyPoint](parallelism = 2, preparedStatement, statementBinder)
+    CassandraSink.apply[PricingPoint](parallelism = 2, preparedStatement, statementBinder)
   }
 
   def getStream(conf: Config, topics: Set[String])
@@ -73,7 +72,7 @@ object CassandraLogger {
     Consumer
       .committableSource(consumerSettings, Subscriptions.topics(topics))
       .map(msg => msg.record.value())
-      .map(currencyPointString => Json.parse(currencyPointString).as[CurrencyPoint])
+      .map(currencyPointString => Json.parse(currencyPointString).as[PricingPoint])
       .toMat(cassandraSink)(Keep.right)
 
   }
@@ -87,11 +86,11 @@ case class CassandraLogger(conf: Config) {
     implicit val materializer: ActorMaterializer = ActorMaterializer()
     implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
-    val topics: Set[String] = conf
-      .getStringList("tradr.trader.allSymbols")
-      .asScala
-      .toSet[String]
-
+//    val topics: Set[String] = conf
+//      .getStringList("tradr.trader.allSymbols")
+//      .asScala
+//      .toSet[String]
+    val topics = Set("EURUSD") // kafka topics to listen on
     val stream = getStream(conf, topics)
     stream.run()
 
