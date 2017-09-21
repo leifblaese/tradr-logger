@@ -1,12 +1,10 @@
 
 val libdeps = Seq(
-//  "org.apache.spark" % "spark-core_2.11" % "2.2.0",
-  "org.apache.spark" % "spark-sql_2.11" % "2.2.0",
-  "org.apache.spark" % "spark-streaming_2.11" % "2.2.0",
-  "org.apache.spark" % "spark-streaming-kafka-0-10_2.11" % "2.2.0",
-  "com.datastax.spark" % "spark-cassandra-connector_2.11" % "2.0.5",
   "com.typesafe" % "config" % "1.3.1",
-  "com.typesafe.play" %% "play-json" % "2.6.3"
+  "com.typesafe.akka" %% "akka-actor" % "2.4.19",
+  "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "0.11",
+  "com.typesafe.akka" %% "akka-stream-kafka" % "0.17",
+  "org.slf4j" % "slf4j-simple" % "1.7.25"
 )
 
 
@@ -18,7 +16,7 @@ lazy val root = (project in file("."))
       name := "tradr-logger",
       organization := "tradr",
       version := "1.0.0",
-      scalaVersion := "2.11.11",
+      scalaVersion := "2.12.2",
       libraryDependencies ++= libdeps,
       assemblyJarName in assembly := "tradr-logger.jar"
     )
@@ -26,15 +24,22 @@ lazy val root = (project in file("."))
 
 
 val productionConfFileSource = new File("/home/leifblaese/Dropbox/Privat/Tradr/production.conf")
+
 dockerfile in docker := {
-  val appDir: File = stage.value
+  val artifact: File = assembly.value
   val targetDir = "/opt/tradr-logger"
+
   new Dockerfile {
     from("java")
-    copy(appDir, targetDir)
-    copy(productionConfFileSource, targetDir)
-    entryPoint(s"$targetDir/bin/${executableScriptName.value}", s"-Dconfig.file=$targetDir/production.conf")
+    runRaw("mkdir /opt/tradr-logger")
+    add(artifact, s"${targetDir}/${artifact.getName}")
+    copy(productionConfFileSource, "/opt/tradr-logger")
+    runRaw("ls /opt/tradr-logger")
+    runRaw("cat /opt/tradr-logger/production.conf")
+    entryPoint("java", s"-Dconfig.file=/opt/tradr-logger/production.conf", "-jar", "/opt/tradr-logger/tradr-logger.jar")
   }
+
+//  buildOptions in docker := BuildOptions(cache=false)
 }
 
 
