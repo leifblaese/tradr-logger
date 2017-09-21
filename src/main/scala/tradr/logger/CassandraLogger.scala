@@ -28,14 +28,14 @@ object CassandraLogger {
 
     ConsumerSettings(system, new ByteArrayDeserializer, new StringDeserializer)
       .withBootstrapServers(kafkaBootstrapServers)
-      .withGroupId("group1")
+      .withGroupId(kafkaGroupID)
       .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest")
   }
 
   private[this] def getCassandraSession(conf: Config): Session = {
 
     val cassandraContactPoint = conf.getString("cassandra.ip")
-    val port = conf.getStringList("cassandra.port").get(0).toInt
+    val port = conf.getString("cassandra.connectorPort").toInt
 
     Cluster
       .builder
@@ -52,17 +52,30 @@ object CassandraLogger {
     val tableName = conf.getString("cassandra.currencyTable")
 
 
+//    val statement = 'INSERT INTO tradr.currencies ("timestamp", currencypair, value) VALUES(0, '', 0)
 
-    val preparedStatement = session.prepare(s"INSERT INTO $keyspaceName.$tableName VALUES (?, ?, ?)")
+    val preparedStatement = session.prepare(
+      s"""INSERT INTO tradr.currencies ("timestamp", currencypair, value) VALUES (?, ?, ?);"""
+    )
     val statementBinder =
       (point: PricingPoint, statement: PreparedStatement) =>
         statement.bind(
-          point.timestamp.asInstanceOf[Object], point.currencyPair.asInstanceOf[Object], point.value.asInstanceOf[Object]
+          point.timestamp.asInstanceOf[AnyRef],
+          point.currencyPair.asInstanceOf[AnyRef],
+          point.value.asInstanceOf[AnyRef]
         )
 
     CassandraSink.apply[PricingPoint](parallelism = 2, preparedStatement, statementBinder)
   }
 
+  /**
+    * Subscribe to a stream from kafka and write it into a database
+    * @param conf
+    * @param topics
+    * @param system
+    * @param ec
+    * @return
+    */
   def getStream(conf: Config, topics: Set[String])
                (implicit system: ActorSystem, ec: ExecutionContext) = {
 
@@ -86,10 +99,6 @@ case class CassandraLogger(conf: Config) {
     implicit val materializer: ActorMaterializer = ActorMaterializer()
     implicit val ec: ExecutionContextExecutor = ExecutionContext.global
 
-//    val topics: Set[String] = conf
-//      .getStringList("tradr.trader.allSymbols")
-//      .asScala
-//      .toSet[String]
     val topics = Set("EURUSD") // kafka topics to listen on
     val stream = getStream(conf, topics)
     stream.run()
