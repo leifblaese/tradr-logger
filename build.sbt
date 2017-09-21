@@ -3,7 +3,8 @@ val libdeps = Seq(
   "com.typesafe" % "config" % "1.3.1",
   "com.typesafe.akka" %% "akka-actor" % "2.4.19",
   "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "0.11",
-  "com.typesafe.akka" %% "akka-stream-kafka" % "0.17"
+  "com.typesafe.akka" %% "akka-stream-kafka" % "0.17",
+  "org.slf4j" % "slf4j-simple" % "1.7.25"
 )
 
 
