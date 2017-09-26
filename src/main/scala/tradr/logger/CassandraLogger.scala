@@ -49,13 +49,13 @@ object CassandraLogger {
     implicit val session = getCassandraSession(conf)
 
     val keyspaceName = conf.getString("cassandra.currencyKeyspace")
-    val tableName = conf.getString("cassandra.currencyTable")
+    val tableName = conf.getString("cassandra.keyspace")
 
 
 //    val statement = 'INSERT INTO tradr.currencies ("timestamp", currencypair, value) VALUES(0, '', 0)
 
     val preparedStatement = session.prepare(
-      s"""INSERT INTO tradr.currencies ("timestamp", currencypair, value) VALUES (?, ?, ?);"""
+      s"""INSERT INTO tradr.currencies ("timestamp", instrument, value) VALUES (?, ?, ?);"""
     )
     val statementBinder =
       (point: PricingPoint, statement: PreparedStatement) =>
