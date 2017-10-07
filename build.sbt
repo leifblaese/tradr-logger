@@ -1,10 +1,10 @@
 
 val libdeps = Seq(
-  "com.typesafe" % "config" % "1.3.1",
   "com.typesafe.akka" %% "akka-actor" % "2.4.19",
   "com.lightbend.akka" %% "akka-stream-alpakka-cassandra" % "0.11",
   "com.typesafe.akka" %% "akka-stream-kafka" % "0.17",
-  "org.slf4j" % "slf4j-simple" % "1.7.25"
+  "org.slf4j" % "slf4j-simple" % "1.7.25",
+  "tradr" % "tradr-common" % "0.0.1"
 )
 
 
@@ -15,7 +15,7 @@ lazy val root = (project in file("."))
     Seq(
       name := "tradr-logger",
       organization := "tradr",
-      version := "1.0.0",
+      version := "0.0.1",
       scalaVersion := "2.12.2",
       libraryDependencies ++= libdeps,
       assemblyJarName in assembly := "tradr-logger.jar"

@@ -48,11 +48,8 @@ object CassandraLogger {
   private def getCassandraSink(conf: Config)(implicit ec: ExecutionContext): Sink[PricingPoint, Future[Done]] = {
     implicit val session = getCassandraSession(conf)
 
-    val keyspaceName = conf.getString("cassandra.currencyKeyspace")
-    val tableName = conf.getString("cassandra.keyspace")
-
-
-//    val statement = 'INSERT INTO tradr.currencies ("timestamp", currencypair, value) VALUES(0, '', 0)
+    val keyspaceName = conf.getString("cassandra.keyspace")
+    val tableName = conf.getString("cassandra.currencyTable")
 
     val preparedStatement = session.prepare(
       s"""INSERT INTO tradr.currencies ("timestamp", instrument, value) VALUES (?, ?, ?);"""
